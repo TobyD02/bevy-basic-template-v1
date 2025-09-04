@@ -1,5 +1,5 @@
 use bevy::prelude::*;
-use crate::components::Cooldown;
+use crate::components::core::Cooldown;
 
 pub fn cooldown_tick(
     time: Res<Time>,

@@ -1,8 +1,7 @@
-use crate::components::{Health, HealthBundle};
-
 use crate::entities::player::components::{Inventory, Player};
 use crate::entities::player::systems::{player_movement};
 use bevy::prelude::*;
+use crate::components::bundles::HealthBundle;
 
 pub struct PlayerPlugin;
 

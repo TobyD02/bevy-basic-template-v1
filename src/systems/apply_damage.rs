@@ -1,5 +1,5 @@
 use bevy::prelude::*;
-use crate::components::{Cooldown, Health};
+use crate::components::core::{Cooldown, Health};
 use crate::events::DamageEvent;
 
 pub fn apply_damage(
