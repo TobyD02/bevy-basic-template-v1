@@ -37,10 +37,9 @@ pub fn spawn_player(mut commands: Commands) {
         .insert(Restitution::coefficient(0.0)) // no bounce
         .insert(Friction::coefficient(0.8)) // optional: add some friction
         .insert(KinematicCharacterController {
-            snap_to_ground: Some(CharacterLength::Absolute(0.5)),
             min_slope_slide_angle: 0.0_f32.to_radians(),
             // IMPORTANT - this offset prevents floating point errors with the KCC position (bobbling movement, etc...)
-            offset: CharacterLength::Absolute(0.5),
+            offset: CharacterLength::Absolute(1.),
             ..default()
         })
         .insert(Transform::from_xyz(0., 0., 0.))
@@ -106,7 +105,5 @@ pub fn player_movement(
 pub fn update_player_state(mut query: Query<(&KinematicCharacterControllerOutput, &mut Player)>) {
     for (output, mut player) in &mut query {
         player.grounded = output.grounded;
-        // REMOVE THIS LINE: player.grounded = output.grounded;
-        println!("{:?}", player);
     }
 }
