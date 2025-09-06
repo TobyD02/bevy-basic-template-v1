@@ -39,6 +39,7 @@ pub fn spawn_player(mut commands: Commands) {
         .insert(KinematicCharacterController {
             snap_to_ground: Some(CharacterLength::Absolute(0.5)),
             min_slope_slide_angle: 0.0_f32.to_radians(),
+            // IMPORTANT - this offset prevents floating point errors with the KCC position (bobbling movement, etc...)
             offset: CharacterLength::Absolute(0.5),
             ..default()
         })
