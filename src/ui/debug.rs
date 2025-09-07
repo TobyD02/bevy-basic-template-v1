@@ -39,7 +39,6 @@ pub fn update_fps_text(
             if let Some(value) = fps.smoothed() {
                 // Update the value of the second section
                 **span = format!("{value:.0}");
-                println!("fps: {}", format!("{value:.0}"));
             }
         }
     }
