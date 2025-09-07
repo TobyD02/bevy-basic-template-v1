@@ -1,2 +1,3 @@
 pub mod plugin;
-mod player;
+pub mod player;
+mod camera;
