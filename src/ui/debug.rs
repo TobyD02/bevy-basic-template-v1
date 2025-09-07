@@ -1,5 +1,5 @@
-use bevy::color::palettes::css::GOLD;
 use bevy::prelude::*;
+use bevy::color::palettes::css::GOLD;
 use bevy::diagnostic::{DiagnosticsStore, FrameTimeDiagnosticsPlugin};
 
 #[derive(Component)]

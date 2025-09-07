@@ -1,7 +1,5 @@
 use bevy::prelude::*;
 
-pub const DEBUG_MODE: bool = true;
-
 pub const GRAVITY: Vec2 = Vec2::new(0., -981.);
 pub const MIN_SPEED: f32 = 1.;
 pub const TEXTURE_ATLAS: &str = "monochrome_tilemap_transparent.png";
