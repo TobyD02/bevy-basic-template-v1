@@ -72,20 +72,14 @@ pub fn spawn_player(
 pub fn player_movement(
     input: Res<ButtonInput<KeyCode>>,
     time: Res<Time>,
-    mut query: Query<(&mut KinematicCharacterController, &mut Player, &mut AnimationController, &mut RigidBody, &mut Velocity)>,
+    mut query: Query<(&mut KinematicCharacterController, &mut Player, &mut AnimationController, &mut Velocity)>,
 ) {
     let dt = time.delta_secs();
 
 
-    for (mut controller, mut player, mut animation, mut rb, mut vel) in &mut query {
+    for (mut controller, mut player, mut animation, mut vel) in &mut query {
         let mut applied_force: Vec2 = (0., 0.).into();
         let mut applied_impulse: Vec2 = (0., 0.).into();
-        let mut animation_block: bool = false;
-
-        // ----------
-        let translation = player.velocity * dt;
-        controller.translation = Some(translation);
-
 
         if player.grounded {
             player.jump_count = player.max_jump_count;
@@ -99,14 +93,6 @@ pub fn player_movement(
             applied_force += GRAVITY; // apply gravity if not grounded
         }
 
-        if input.just_pressed(KeyCode::Space) && player.jump_count > 0 {
-            player.velocity.y = 0.;
-            applied_impulse.y += player.jump_force;
-            player.jump_count -= 1;
-            animation.play_animation("player_jump");
-            animation_block = true;
-        }
-
         let mut input_dir: f32 = 0.;
         if input.pressed(KeyCode::KeyA) {
             input_dir -= player.accel;
@@ -115,18 +101,27 @@ pub fn player_movement(
             input_dir += player.accel;
         }
 
+
+        let mut animation_name= "player_idle";
         // If no force is applied, apply friction_mod
         if input_dir == 0. {
-            if !animation_block & player.grounded{
-                animation.play_animation("player_idle");
-            }
             applied_force.x -= player.velocity.x * player.friction_mod;
         } else {
-            if !animation_block & player.grounded {
-                animation.play_animation("player_run");
-            }
+            animation_name = "player_run";
             animation.flip_x = input_dir < 0.;
             applied_force.x += input_dir;
+        }
+
+        if !player.grounded {
+            animation_name = "player_jump";
+        }
+
+        animation.play_animation(animation_name);
+
+        if input.just_pressed(KeyCode::Space) && player.jump_count > 0 {
+            player.velocity.y = 0.;
+            applied_impulse.y += player.jump_force;
+            player.jump_count -= 1;
         }
 
         player.velocity += applied_force * dt;
@@ -140,6 +135,9 @@ pub fn player_movement(
         }
 
         vel.linvel = player.velocity * dt;
+
+        let translation = player.velocity * dt;
+        controller.translation = Some(translation);
     }
 }
 
