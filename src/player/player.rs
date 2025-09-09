@@ -1,14 +1,14 @@
 use std::cmp::min;
 use bevy::prelude::*;
-use bevy_rapier2d::prelude::*;
 use crate::animation_controller::animation_controller::{AnimationController, AnimationControllerBundle};
-use crate::animation_controller::animations::{PLAYER_DEAD_ANIMATION, PLAYER_IDLE_ANIMATION, PLAYER_JUMP_ANIMATION, PLAYER_RUN_ANIMATION};
-use crate::globals::{GRAVITY, MIN_SPEED};
+use crate::animation_controller::animations::{PLAYER_DEAD, PLAYER_IDLE, PLAYER_JUMP, PLAYER_RUN};
+use crate::globals::{GRAVITY, MIN_SPEED, TILE_SIZE};
+use crate::physics::aabb::AABB;
 use crate::player::camera::CameraBundle;
+use crate::physics::body::Body;
 
 #[derive(Component, Debug)]
 pub struct Player {
-    velocity: Vec2,
     max_speed: f32,
     accel: f32,
     grounded: bool,
@@ -29,7 +29,6 @@ impl Player {
             jump_count: number_of_jumps,
             max_jump_count: number_of_jumps,
             friction_mod,
-            velocity: Vec2::new(0., 0.),
             grounded: false,
         }
     }
@@ -46,51 +45,38 @@ pub fn spawn_player(
             CameraBundle::new(),
             AnimationControllerBundle::new(
                 vec![
-                    PLAYER_IDLE_ANIMATION,
-                    PLAYER_RUN_ANIMATION,
-                    PLAYER_JUMP_ANIMATION,
-                    PLAYER_DEAD_ANIMATION,
+                    PLAYER_IDLE,
+                    PLAYER_RUN,
+                    PLAYER_JUMP,
+                    PLAYER_DEAD,
                 ],
                 asset_server,
                 texture_atlas_layouts,
             ),
-            RigidBody::Dynamic,
-            Velocity {
-                linvel: Vec2::splat(0.),
-                angvel: 0.,
-            },
-            LockedAxes::ROTATION_LOCKED,
-            GravityScale{ 0: 0. },
-            Restitution::new(0.),
-            Ccd::enabled(),
-            Collider::cuboid(8., 8.),
-            KinematicCharacterController::default(),
-            Transform::from_xyz(0., 0., 0.),
+            Body::new(0, true),
+            AABB::new(TILE_SIZE.x as f32, TILE_SIZE.y as f32),
+            Transform::from_xyz(0., 100., 0.),
             GlobalTransform::default(),
         ));
 }
+
 pub fn player_movement(
-    input: Res<ButtonInput<KeyCode>>,
     time: Res<Time>,
-    mut query: Query<(&mut KinematicCharacterController, &mut Player, &mut AnimationController, &mut Velocity)>,
+    input: Res<ButtonInput<KeyCode>>,
+    mut query: Query<(&mut Player, &mut AnimationController, &mut Body)>,
 ) {
     let dt = time.delta_secs();
 
-
-    for (mut controller, mut player, mut animation, mut vel) in &mut query {
-        let mut applied_force: Vec2 = (0., 0.).into();
-        let mut applied_impulse: Vec2 = (0., 0.).into();
+    for (mut player, mut animation, mut body) in &mut query {
+        // Set grounded state based on collision flags from the PREVIOUS frame.
+        // This is crucial for stability.
+        player.grounded = body.colliding_down;
 
         if player.grounded {
             player.jump_count = player.max_jump_count;
-
-            if player.velocity.y < 0.1 {
-                player.velocity.y = 0.; // set y velocity to 0 when grounded
-            }
-
         } else {
-            player.jump_count = min(player.jump_count, 1);
-            applied_force += GRAVITY; // apply gravity if not grounded
+            // Apply gravity only if not grounded.
+            body.force += GRAVITY;
         }
 
         let mut input_dir: f32 = 0.;
@@ -101,15 +87,14 @@ pub fn player_movement(
             input_dir += player.accel;
         }
 
-
         let mut animation_name= "player_idle";
         // If no force is applied, apply friction_mod
         if input_dir == 0. {
-            applied_force.x -= player.velocity.x * player.friction_mod;
+            body.force.x -= body.velocity.x * player.friction_mod;
         } else {
             animation_name = "player_run";
             animation.flip_x = input_dir < 0.;
-            applied_force.x += input_dir;
+            body.force.x += input_dir;
         }
 
         if !player.grounded {
@@ -119,30 +104,13 @@ pub fn player_movement(
         animation.play_animation(animation_name);
 
         if input.just_pressed(KeyCode::Space) && player.jump_count > 0 {
-            player.velocity.y = 0.;
-            applied_impulse.y += player.jump_force;
+            body.impulse.y += player.jump_force;
             player.jump_count -= 1;
+            body.colliding_down = false;
         }
 
-        player.velocity += applied_force * dt;
-        player.velocity += applied_impulse;
-
-        if player.velocity.x.abs() > player.max_speed {
-            player.velocity.x = player.velocity.x.signum() * player.max_speed;
+        if body.velocity.x.abs() > player.max_speed {
+            body.velocity.x = body.velocity.x.signum() * player.max_speed;
         }
-        if player.velocity.x.abs() < MIN_SPEED {
-            player.velocity.x = 0.;
-        }
-
-        vel.linvel = player.velocity * dt;
-
-        let translation = player.velocity * dt;
-        controller.translation = Some(translation);
-    }
-}
-
-pub fn update_player_state(mut query: Query<(&KinematicCharacterControllerOutput, &mut Player)>) {
-    for (output, mut player) in &mut query {
-        player.grounded = output.grounded;
     }
 }

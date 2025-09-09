@@ -27,7 +27,10 @@ pub struct AnimationTimer(Timer);
 impl AnimationController {
     pub(crate) fn play_animation(&mut self, name: &str) {
         if let Some((i, _)) = self.animations.iter().enumerate().find(|(_, a)| a.name == name) {
-            if self.current_animation == i {return}
+            if self.current_animation == i {
+                return
+            }
+
             self.current_animation = i;
             self.animations[i].current_pos = 0;
         }
